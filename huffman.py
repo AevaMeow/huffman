@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 from collections import Counter
 import heapq
+import struct
+from bitstring import BitArray
+from string import *
 
 class HufTree:
     def __init__(self, char, freq):
@@ -13,7 +16,7 @@ class HufTree:
     def __lt__(self, other):
         return self.freq < other.freq
     
-def genHufCodes(node, code='', resultDict=None):
+def genHufCodes(node, code = '', resultDict = None):
     if resultDict is None:
         resultDict = {}
         
@@ -47,6 +50,45 @@ def genTree(bytes_freq):
     
     return tree[0]
 
+def bitsToRawBytes(bitStr):
+    byte_array = bytearray()
+    for i in range(0, len(bitStr), 8):
+        byte = bitStr[i:i + 8]
+        byte_array.append(int(byte, 2))
+    
+    return byte_array
+
+def hufDictPacker(hufCodes):
+    packedTree = b''
+    for byte, code in hufCodes.items():
+        packedTree += struct.pack('B', byte)
+        packedTree += struct.pack('B', len(code))
+        int_code = int(code, 2)
+        packedTree += struct.pack('>I', int_code)
+    return packedTree
+
+
+def genEncodedFile(hufCodes, extraBits, rawData):
+    packedTree = hufDictPacker(hufCodes)
+    treeLen = struct.pack('>H', len(packedTree))
+
+    f = open("encoded", 'wb')
+    f.write(treeLen)
+    f.write(packedTree)
+    f.write(struct.pack('H', extraBits))
+    f.write(rawData)
+    
+def parseTree(encoded):
+    treeLen = int.from_bytes(encoded.read(2), byteorder='big') // 6
+    hufDeCodes = {}
+    for i in range(treeLen):
+        byte = int.from_bytes(encoded.read(1), 'little')
+        codeLen = int.from_bytes(encoded.read(1), 'little')
+        code = ((bin(int((encoded.read(4)).hex(), 16)).removeprefix('0b')).rjust(32, '0'))[-codeLen:]
+        hufDeCodes[byte] = code
+    return(hufDeCodes)
+
+
 if __name__ == "__main__":
     source = open('source.txt', mode='rb')
     bytes = source.read()
@@ -54,8 +96,15 @@ if __name__ == "__main__":
     bytes_freq = dict(Counter(bytes))
     root = genTree(bytes_freq)
     hufCodes = genHufCodes(root)
-    encodedFile = hufEncode(bytes, hufCodes)
-    # print(bytes)
-    # print(huffman_codes)
-    print(encodedFile)
-    # запаковать
+    binStr = hufEncode(bytes, hufCodes)
+    extraBits = 8 - len(binStr) % 8
+    binStr += '0' * extraBits
+    rawData = bitsToRawBytes(binStr)
+    genEncodedFile(hufCodes, extraBits, rawData)
+
+    encoded = open('encoded', 'rb')
+    hufDeCodes = parseTree(encoded)
+
+    extraBits = int.from_bytes(encoded.read(1), 'little')
+    encoded.read(1)
+    rawData = encoded.read()
