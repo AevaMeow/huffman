@@ -88,8 +88,19 @@ def parseTree(encoded):
         hufDeCodes[byte] = code
     return(hufDeCodes)
 
+def parseText(encoded):
+    extraBits = int.from_bytes(encoded.read(1), 'little')
+    encoded.read(1)
+    rawData = encoded.read()
+    bitStr = ''
+    for i in range(len(rawData)):
+        bitStr += (str(bin(rawData[i]).removeprefix('0b'))).rjust(8,'0')
+    bitStr = bitStr[:-extraBits]
+    return bitStr
+
 
 if __name__ == "__main__":
+    # encode
     source = open('source.txt', mode='rb')
     bytes = source.read()
     source.close()
@@ -102,9 +113,7 @@ if __name__ == "__main__":
     rawData = bitsToRawBytes(binStr)
     genEncodedFile(hufCodes, extraBits, rawData)
 
+    # decode
     encoded = open('encoded', 'rb')
     hufDeCodes = parseTree(encoded)
-
-    extraBits = int.from_bytes(encoded.read(1), 'little')
-    encoded.read(1)
-    rawData = encoded.read()
+    encodedText = parseText(encoded)
