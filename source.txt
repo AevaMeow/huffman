@@ -1,2 +1,0 @@
-Кодирование Хаффмана — это алгоритм сжатия данных, который формирует основную идею сжатия файлов. В этом посте рассказывается о кодировании с фиксированной и переменной длиной, уникально декодируемых кодах, правилах префиксов и построении дерева Хаффмана.
-In computer science and information theory, a Huffman code is a particular type of optimal prefix code that is commonly used for lossless data compression.

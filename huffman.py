@@ -98,22 +98,40 @@ def parseText(encoded):
     bitStr = bitStr[:-extraBits]
     return bitStr
 
+def decode_huffman(encodedText, huffmanCodes):
+    revHufCodes = {v: k for k, v in huffmanCodes.items()}
+    bytes = bytearray()
+    temp = ""
+    
+    for bit in encodedText:
+        temp += bit
+        if temp in revHufCodes:
+            bytes.append(revHufCodes[temp])
+            temp = ""
+    
+    return bytes
+
 
 if __name__ == "__main__":
     # encode
-    source = open('source.txt', mode='rb')
+    source = open('source', mode='rb')
     bytes = source.read()
     source.close()
-    bytes_freq = dict(Counter(bytes))
-    root = genTree(bytes_freq)
-    hufCodes = genHufCodes(root)
-    binStr = hufEncode(bytes, hufCodes)
-    extraBits = 8 - len(binStr) % 8
+    bytes_freq = dict(Counter(bytes)) # таблица частот
+    root = genTree(bytes_freq) # дерево хаффмана
+    hufCodes = genHufCodes(root) # словарь кодов
+    binStr = hufEncode(bytes, hufCodes) # закодированная строка
+    extraBits = 8 - len(binStr) % 8 # выравнивание строки
     binStr += '0' * extraBits
-    rawData = bitsToRawBytes(binStr)
-    genEncodedFile(hufCodes, extraBits, rawData)
+    rawData = bitsToRawBytes(binStr) # преобразование двоичных данных в байты
+    genEncodedFile(hufCodes, extraBits, rawData) # создание файла
 
     # decode
     encoded = open('encoded', 'rb')
-    hufDeCodes = parseTree(encoded)
-    encodedText = parseText(encoded)
+    hufDeCodes = parseTree(encoded) # дерево
+    encodedText = parseText(encoded) # парсим закодированный текст и преобразуем в бинарную строку
+    text = decode_huffman(encodedText, hufDeCodes) # декодируем файл
+    decoded = open('decoded', 'wb')
+    decoded.write(text) # записываем в декодированный
+    encoded.close()
+    decoded.close()
